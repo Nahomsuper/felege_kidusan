@@ -1,0 +1,539 @@
+<?php
+session_start();
+
+/* ══════════════════════════════════════════════════════
+   RATE LIMITING — max 5 attempts per 10 minutes
+   ══════════════════════════════════════════════════════ */
+if (!isset($_SESSION['login_attempts'])) $_SESSION['login_attempts'] = 0;
+if (!isset($_SESSION['login_lockout']))  $_SESSION['login_lockout']  = 0;
+
+$lockout_duration  = 600;
+$max_attempts      = 5;
+$locked_out        = false;
+$lockout_remaining = 0;
+
+if ($_SESSION['login_lockout'] > 0) {
+    $lockout_remaining = $_SESSION['login_lockout'] - time();
+    if ($lockout_remaining > 0) {
+        $locked_out = true;
+    } else {
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['login_lockout']  = 0;
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   CSRF TOKEN
+   ══════════════════════════════════════════════════════ */
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$error_message = '';
+
+/* ══════════════════════════════════════════════════════
+   LOGIN HANDLER
+   ══════════════════════════════════════════════════════ */
+if (isset($_POST['login']) && !$locked_out) {
+
+    // CSRF check
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $error_message = 'Invalid request. Please try again.';
+    } else {
+        include './connection/db.php';
+
+        $username = trim($_POST['username'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        if (empty($username) || empty($password)) {
+            $error_message = 'Please fill in both fields.';
+        } else {
+            // Fetch user by username — prepared statement, no SQL injection possible
+            $stmt = $connection->prepare(
+                "SELECT id, role, password FROM users WHERE username = ? LIMIT 1"
+            );
+            $stmt->bind_param('s', $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            if ($result->num_rows === 1) {
+                $user = $result->fetch_assoc();
+                $stored = $user['password'];
+
+                /*
+                 * PASSWORD CHECK — supports both plain-text (legacy) and bcrypt hashes.
+                 * If the stored value starts with "$2y$" it's a bcrypt hash → use password_verify().
+                 * Otherwise fall back to direct string comparison (plain-text legacy accounts).
+                 * When a plain-text account logs in successfully, the password is automatically
+                 * upgraded to a bcrypt hash in the database for next time.
+                 */
+                $password_ok = false;
+
+                if (password_needs_rehash($stored, PASSWORD_BCRYPT) && strpos($stored, '$2y$') !== 0) {
+                    // Legacy plain-text comparison
+                    if ($password === $stored) {
+                        $password_ok = true;
+                        // Auto-upgrade to bcrypt hash
+                        $new_hash = password_hash($password, PASSWORD_BCRYPT);
+                        $upd = $connection->prepare("UPDATE users SET password = ? WHERE id = ?");
+                        $upd->bind_param('si', $new_hash, $user['id']);
+                        $upd->execute();
+                        $upd->close();
+                    }
+                } else {
+                    // Modern bcrypt hash
+                    $password_ok = password_verify($password, $stored);
+                }
+
+                if ($password_ok) {
+                    session_regenerate_id(true);
+                    $_SESSION['login_attempts'] = 0;
+                    $_SESSION['login_lockout']  = 0;
+                    $_SESSION['user_id']        = $user['id'];
+                    $_SESSION['user_role']      = $user['role'];
+
+                    $destinations = [
+                        'admin'    => 'admin.php',
+                        'student'  => 'student.php',
+                        'teacher'  => 'teacher.php',
+                        'customer' => 'welcome.php',
+                    ];
+
+                    $role = $user['role'];
+                    if (array_key_exists($role, $destinations)) {
+                        header('Location: ' . $destinations[$role]);
+                        exit;
+                    } else {
+                        $error_message = 'Account role not recognised. Please contact the administrator.';
+                    }
+                } else {
+                    // Wrong password path
+                    $_SESSION['login_attempts']++;
+                    if ($_SESSION['login_attempts'] >= $max_attempts) {
+                        $_SESSION['login_lockout'] = time() + $lockout_duration;
+                        $locked_out        = true;
+                        $lockout_remaining = $lockout_duration;
+                        $error_message     = 'Too many failed attempts. Please wait 10 minutes.';
+                    } else {
+                        $left          = $max_attempts - $_SESSION['login_attempts'];
+                        $error_message = 'Incorrect username or password. ' . $left . ' attempt' . ($left === 1 ? '' : 's') . ' remaining.';
+                    }
+                }
+            } else {
+                // No user found — identical message to wrong password (prevents user enumeration)
+                $_SESSION['login_attempts']++;
+                if ($_SESSION['login_attempts'] >= $max_attempts) {
+                    $_SESSION['login_lockout'] = time() + $lockout_duration;
+                    $locked_out        = true;
+                    $lockout_remaining = $lockout_duration;
+                    $error_message     = 'Too many failed attempts. Please wait 10 minutes.';
+                } else {
+                    $left          = $max_attempts - $_SESSION['login_attempts'];
+                    $error_message = 'Incorrect username or password. ' . $left . ' attempt' . ($left === 1 ? '' : 's') . ' remaining.';
+                }
+            }
+
+            $stmt->close();
+        }
+    }
+
+    // Regenerate CSRF token after every submission
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if ($locked_out && empty($error_message)) {
+    $mins          = ceil($lockout_remaining / 60);
+    $error_message = 'Account temporarily locked. Try again in ' . $mins . ' minute' . ($mins === 1 ? '' : 's') . '.';
+}
+?>
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ይግቡ | Login — ፈለገ ቅዱሳን</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Noto+Sans+Ethiopic:wght@300;400;500&family=EB+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --crimson:      #8B1A1A;
+            --crimson-deep: #5C0E0E;
+            --gold:         #C9952A;
+            --gold-light:   #E8BE5A;
+            --gold-pale:    #F5E6B8;
+            --parchment:    #FAF3E0;
+            --ink:          #1A0F0A;
+            --ink-mid:      #2E1A10;
+            --ivory:        #FDF8EE;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans Ethiopic', 'EB Garamond', serif;
+            background: var(--ink);
+            color: var(--parchment);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #particles-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            pointer-events: none; opacity: 0.4;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 15% 40%, rgba(139,26,26,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 60% at 85% 60%, rgba(201,149,42,0.09) 0%, transparent 60%),
+                radial-gradient(ellipse 80% 80% at 50% 100%, rgba(92,14,14,0.25) 0%, transparent 55%);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed; inset: 16px; z-index: 0;
+            border: 1px solid rgba(201,149,42,0.12);
+            pointer-events: none;
+            animation: frameGlow 5s ease-in-out infinite alternate;
+        }
+
+        @keyframes frameGlow {
+            from { border-color: rgba(201,149,42,0.08); box-shadow: inset 0 0 40px rgba(201,149,42,0.03); }
+            to   { border-color: rgba(201,149,42,0.22); box-shadow: inset 0 0 80px rgba(201,149,42,0.08); }
+        }
+
+        .back-link {
+            position: fixed; top: 28px; left: 32px; z-index: 10;
+            font-family: 'Cinzel', serif; font-size: 10px;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: rgba(201,149,42,0.55); text-decoration: none;
+            display: flex; align-items: center; gap: 8px;
+            transition: color 0.3s;
+        }
+        .back-link:hover { color: var(--gold-light); }
+
+        .login-card {
+            position: relative; z-index: 5;
+            width: 100%; max-width: 420px;
+            margin: 0 20px;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(201,149,42,0.22);
+            overflow: hidden;
+            animation: cardReveal 0.8s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        @keyframes cardReveal {
+            from { opacity: 0; transform: translateY(28px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .card-topbar {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+        }
+
+        .card-body { padding: 48px 44px 52px; }
+
+        .card-emblem { text-align: center; margin-bottom: 28px; }
+
+        .cross-circle {
+            width: 60px; height: 60px;
+            background: rgba(139,26,26,0.18);
+            border: 1px solid rgba(201,149,42,0.3);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .cross-circle img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(201,149,42,0); }
+            50%      { box-shadow: 0 0 0 10px rgba(201,149,42,0.08); }
+        }
+
+        .card-eyebrow {
+            font-family: 'Cinzel', serif; font-size: 9px;
+            letter-spacing: 0.35em; color: var(--gold);
+            text-transform: uppercase; margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .card-eyebrow::before, .card-eyebrow::after {
+            content: ''; flex: 1; max-width: 40px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .card-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.5rem; font-weight: 700;
+            color: var(--ivory); letter-spacing: 0.03em;
+        }
+
+        .card-subtitle {
+            font-family: 'EB Garamond', serif; font-style: italic;
+            font-size: 0.95rem; color: rgba(245,230,184,0.45); margin-top: 6px;
+        }
+
+        .alert {
+            margin-top: 20px; padding: 12px 16px;
+            font-family: 'Noto Sans Ethiopic', sans-serif; font-size: 0.82rem;
+            display: flex; align-items: flex-start; gap: 10px;
+            animation: alertSlide 0.4s ease both;
+        }
+        @keyframes alertSlide {
+            from { opacity: 0; transform: translateX(-8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .alert-error {
+            background: rgba(139,26,26,0.2);
+            border-left: 2px solid var(--crimson);
+            color: rgba(245,230,184,0.85);
+        }
+        .alert i { margin-top: 2px; font-size: 12px; color: var(--crimson); flex-shrink: 0; }
+
+        form { margin-top: 28px; }
+        .form-group { margin-bottom: 20px; }
+
+        .form-label {
+            display: block; font-family: 'Cinzel', serif;
+            font-size: 9px; letter-spacing: 0.22em;
+            text-transform: uppercase; color: rgba(201,149,42,0.65); margin-bottom: 8px;
+        }
+
+        .input-wrapper { position: relative; }
+
+        .input-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            font-size: 13px; color: rgba(201,149,42,0.3);
+            transition: color 0.3s; pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,149,42,0.18);
+            color: var(--parchment);
+            padding: 13px 16px 13px 42px;
+            font-family: 'Noto Sans Ethiopic', sans-serif; font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+            -webkit-appearance: none; border-radius: 0;
+        }
+        .form-input::placeholder { color: rgba(245,230,184,0.2); }
+        .form-input:focus {
+            border-color: rgba(201,149,42,0.5);
+            background: rgba(201,149,42,0.04);
+            box-shadow: 0 0 0 3px rgba(201,149,42,0.07);
+        }
+        .input-wrapper:focus-within .input-icon { color: rgba(201,149,42,0.7); }
+
+        .pw-toggle {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: rgba(201,149,42,0.3);
+            font-size: 13px; cursor: pointer; transition: color 0.3s; padding: 4px;
+        }
+        .pw-toggle:hover { color: var(--gold); }
+
+        .btn-submit {
+            width: 100%; margin-top: 8px;
+            background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-deep) 100%);
+            color: var(--gold-pale); font-family: 'Cinzel', serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.28em;
+            text-transform: uppercase; padding: 16px;
+            border: 1px solid rgba(201,149,42,0.28);
+            cursor: pointer; transition: all 0.35s ease;
+            position: relative; overflow: hidden; border-radius: 0;
+        }
+        .btn-submit::before {
+            content: ''; position: absolute;
+            top: -50%; left: -70%; width: 45%; height: 200%;
+            background: rgba(255,255,255,0.12);
+            transform: skewX(-20deg); transition: left 0.5s ease;
+        }
+        .btn-submit:not(:disabled):hover::before { left: 130%; }
+        .btn-submit:not(:disabled):hover {
+            background: linear-gradient(135deg, #a52020 0%, var(--crimson) 100%);
+            box-shadow: 0 8px 30px rgba(139,26,26,0.45), 0 0 20px rgba(201,149,42,0.08);
+            transform: translateY(-2px);
+        }
+        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .card-footer {
+            margin-top: 32px; display: flex; align-items: center; gap: 12px;
+        }
+        .card-footer::before, .card-footer::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201,149,42,0.2), transparent);
+        }
+        .card-footer-text {
+            font-family: 'Cinzel', serif; font-size: 8px;
+            letter-spacing: 0.25em; color: rgba(201,149,42,0.3);
+            text-transform: uppercase; white-space: nowrap;
+        }
+
+        #lockout-timer { font-family: 'Cinzel', monospace; font-weight: 700; color: var(--crimson); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--ink); }
+        ::-webkit-scrollbar-thumb { background: var(--crimson); }
+    </style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<a href="index.php" class="back-link">
+    <i class="fas fa-chevron-left"></i>
+    <span>Back to Site</span>
+</a>
+
+<div class="login-card">
+    <div class="card-topbar"></div>
+    <div class="card-body">
+
+        <div class="card-emblem">
+            <div class="cross-circle"><img src="images/icon.png" alt="icon"></div>
+            <div class="card-eyebrow"><span>✦</span><span>ፈለገ ቅዱሳን</span><span>✦</span></div>
+            <h1 class="card-title">ይግቡ</h1>
+            <p class="card-subtitle">Sign in to your account</p>
+        </div>
+
+        <?php if (!empty($error_message)): ?>
+        <div class="alert alert-error" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>
+                <?= htmlspecialchars($error_message, ENT_QUOTES, 'UTF-8') ?>
+                <?php if ($locked_out && $lockout_remaining > 0): ?>
+                    &nbsp;(<span id="lockout-timer"><?= (int)$lockout_remaining ?>s</span>)
+                <?php endif; ?>
+            </span>
+        </div>
+        <?php endif; ?>
+
+        <form action="" method="post" autocomplete="off" novalidate>
+
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+
+            <!-- Username -->
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        required
+                        <?= $locked_out ? 'disabled' : '' ?>
+                        value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username'], ENT_QUOTES, 'UTF-8') : '' ?>"
+                    >
+                    <i class="fas fa-user input-icon"></i>
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <div class="input-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="••••••••••••"
+                        autocomplete="current-password"
+                        required
+                        <?= $locked_out ? 'disabled' : '' ?>
+                    >
+                    <i class="fas fa-lock input-icon"></i>
+                    <button type="button" class="pw-toggle" onclick="togglePassword()" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye" id="pw-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                name="login"
+                class="btn-submit"
+                <?= $locked_out ? 'disabled' : '' ?>
+            >
+                <i class="fas fa-sign-in-alt" style="margin-right:8px; font-size:10px;"></i>
+                Enter
+            </button>
+
+        </form>
+
+        <div class="card-footer">
+            <span class="card-footer-text">Felege Kidusan &copy; <?= date('Y') ?></span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function(){
+    const canvas = document.getElementById('particles-canvas');
+    const ctx    = canvas.getContext('2d');
+    let W, H, particles = [];
+    function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+    const COLORS = ['rgba(201,149,42,','rgba(232,190,90,','rgba(245,230,184,','rgba(139,26,26,'];
+    class Particle {
+        constructor(){ this.reset(true); }
+        reset(init){
+            this.x = Math.random()*W; this.y = init ? Math.random()*H : H+10;
+            this.r = Math.random()*1.6+0.3;
+            this.vy = -(Math.random()*0.35+0.12); this.vx = (Math.random()-0.5)*0.25;
+            this.life = 0; this.maxLife = Math.random()*180+100;
+            this.color = COLORS[Math.floor(Math.random()*COLORS.length)];
+        }
+        update(){
+            this.x += this.vx + Math.sin(this.life*0.04)*0.18;
+            this.y += this.vy; this.life++;
+            if(this.life > this.maxLife || this.y < -10) this.reset(false);
+        }
+        draw(){
+            const a = this.life<30 ? this.life/30 : this.life>this.maxLife-40 ? (this.maxLife-this.life)/40 : 0.55;
+            ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+            ctx.fillStyle = this.color+a+')'; ctx.fill();
+        }
+    }
+    for(let i=0;i<70;i++) particles.push(new Particle());
+    (function loop(){ ctx.clearRect(0,0,W,H); particles.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(loop); })();
+})();
+
+function togglePassword(){
+    const inp = document.getElementById('password');
+    const icon = document.getElementById('pw-eye');
+    if(inp.type === 'password'){ inp.type='text'; icon.className='fas fa-eye-slash'; }
+    else { inp.type='password'; icon.className='fas fa-eye'; }
+}
+
+const timerEl = document.getElementById('lockout-timer');
+if(timerEl){
+    let secs = parseInt(timerEl.textContent,10);
+    const tick = setInterval(()=>{
+        secs--;
+        if(secs<=0){ clearInterval(tick); location.reload(); }
+        else timerEl.textContent = secs+'s';
+    },1000);
+}
+</script>
+</body>
+</html>

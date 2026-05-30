@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ፈለገ ቅዱሳን | Felege Kidusan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Noto+Sans+Ethiopic:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --crimson:      #8B1A1A;
+            --crimson-deep: #5C0E0E;
+            --gold:         #C9952A;
+            --gold-light:   #E8BE5A;
+            --gold-pale:    #F5E6B8;
+            --parchment:    #FAF3E0;
+            --ink:          #1A0F0A;
+            --ink-mid:      #2E1A10;
+            --ivory:        #FDF8EE;
+            --shadow-gold:  rgba(201,149,42,0.35);
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Noto Sans Ethiopic', 'EB Garamond', serif;
+            background: var(--ink);
+            color: var(--parchment);
+            overflow-x: hidden;
+        }
+
+        /* ── Particle Canvas ── */
+        #particles-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            pointer-events: none; opacity: 0.45;
+        }
+
+        /* ── NAV ── */
+        .glass-nav {
+            background: rgba(26, 10, 8, 0.92);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(201, 149, 42, 0.25);
+        }
+
+        .nav-logo-text {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            letter-spacing: 0.05em;
+        }
+
+        .nav-link {
+            position: relative;
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(245, 230, 184, 0.65);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover { color: var(--gold-light); }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0; height: 1px;
+            bottom: -5px; left: 0;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            transition: width 0.35s ease;
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after { width: 100%; }
+        .nav-link.active { color: var(--gold-light); }
+
+        /* Login Button */
+        .btn-login {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--ink);
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, #a87820 100%);
+            padding: 8px 18px;
+            border-radius: 2px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(201, 149, 42, 0.4);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -60%;
+            width: 40%; height: 200%;
+            background: rgba(255,255,255,0.25);
+            transform: skewX(-20deg);
+            transition: left 0.4s ease;
+        }
+
+        .btn-login:hover::before { left: 130%; }
+        .btn-login:hover {
+            box-shadow: 0 4px 22px rgba(201, 149, 42, 0.65);
+            transform: translateY(-1px);
+        }
+
+        /* Lang Selector */
+        .lang-select {
+            background: rgba(201, 149, 42, 0.1);
+            color: var(--gold-pale);
+            border: 1px solid rgba(201, 149, 42, 0.3);
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            padding: 6px 10px;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .lang-select option { background: var(--ink-mid); color: var(--parchment); }
+
+        /* Mobile menu */
+        #mobile-menu {
+            transition: all 0.35s ease-in-out;
+            max-height: 0; overflow: hidden; opacity: 0;
+            background: rgba(26, 10, 8, 0.98);
+            border-top: 1px solid rgba(201,149,42,0.15);
+        }
+        #mobile-menu.active { max-height: 700px; opacity: 1; }
+
+        /* ── PAGE TRANSITIONS ── */
+        .page-content { display: none; }
+        .page-content.active {
+            display: block;
+            animation: pageReveal 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+
+        @keyframes pageReveal {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── HERO ── */
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url('images/photo_2026-02-15_00-11-17.jpg');
+            background-size: cover;
+            background-position: center;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .hero-overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background: linear-gradient(
+                to bottom,
+                rgba(15,5,3,0.88) 0%,
+                rgba(92,14,14,0.55) 40%,
+                rgba(15,5,3,0.92) 100%
+            );
+        }
+
+        /* Animated cross border */
+        .hero-overlay::after {
+            content: '';
+            position: absolute; inset: 20px;
+            border: 1px solid rgba(201,149,42,0.18);
+            pointer-events: none;
+            animation: borderGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            from { box-shadow: inset 0 0 30px rgba(201,149,42,0.04); border-color: rgba(201,149,42,0.12); }
+            to   { box-shadow: inset 0 0 60px rgba(201,149,42,0.12); border-color: rgba(201,149,42,0.28); }
+        }
+
+        .hero-content {
+            position: relative; z-index: 2;
+            text-align: center;
+            width: 100%; max-width: 1000px;
+            margin: 0 auto;
+            padding: 130px 24px 90px;
+        }
+
+        .hero-eyebrow {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.35em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 16px;
+            animation: fadeUp 1s 0.2s both;
+        }
+
+        .hero-eyebrow::before,
+        .hero-eyebrow::after {
+            content: '';
+            flex: 1; max-width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .hero-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(2.2rem, 6vw, 4.5rem);
+            font-weight: 900;
+            color: var(--ivory);
+            line-height: 1.1;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 40px rgba(201,149,42,0.3);
+            animation: fadeUp 1s 0.4s both;
+        }
+
+        .hero-subtitle {
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: var(--gold-pale);
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+            animation: fadeUp 1s 0.6s both;
+        }
+
+        .hero-desc {
+            font-family: 'Noto Sans Ethiopic', sans-serif;
+            font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+            color: rgba(245, 230, 184, 0.7);
+            max-width: 680px;
+            margin: 0 auto 40px;
+            line-height: 1.9;
+            animation: fadeUp 1s 0.8s both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .featured-image-container {
+            width: 100%; max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            animation: scaleIn 1.1s cubic-bezier(0.16,1,0.3,1) 0.9s both;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.93) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .featured-image-container::before {
+            content: '';
+            position: absolute; inset: -3px;
+            border: 1px solid rgba(201,149,42,0.4);
+            border-radius: 2px;
+            z-index: 1; pointer-events: none;
+        }
+
+        .main-large-pic {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            border-radius: 2px;
+            box-shadow: 0 40px 80px -12px rgba(0,0,0,0.8), 0 0 60px rgba(201,149,42,0.1);
+            display: block;
+        }
+
+        /* ── SECTION PAGES ── */
+        .themed-page {
+            min-height: 100vh;
+            background: linear-gradient(to bottom, var(--ink) 0%, var(--ink-mid) 50%, var(--ink) 100%);
+            padding-top: 8rem;
+            padding-bottom: 6rem;
+            position: relative;
+        }
+
+        .themed-page::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                radial-gradient(ellipse at 20% 30%, rgba(139,26,26,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(201,149,42,0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        #page-about {
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        #page-about::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(
+                to bottom,
+                rgba(26, 15, 10, 0.9) 0%,
+                rgba(46, 26, 16, 0.8) 50%,
+                rgba(26, 15, 10, 0.95) 100%
+            ), url('images/ab.jpg') no-repeat center center / cover;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .section-heading {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(1.6rem, 4vw, 2.6rem);
+            color: var(--gold-light);
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        .section-divider {
+            display: flex; align-items: center;
+            justify-content: center; gap: 12px;
+            margin-bottom: 3rem;
+        }
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1; max-width: 120px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        .cross-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            display: inline-block;
+            filter: drop-shadow(0 0 4px rgba(201,149,42,0.4));
+        }
+
+        /* Cards */
+        .section-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,149,42,0.2);
+            border-radius: 2px;
+            padding: 2.5rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .section-card:hover {
+            background: rgba(201,149,42,0.06);
+            border-color: rgba(201,149,42,0.45);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px -10px rgba(0,0,0,0.6), 0 0 30px rgba(201,149,42,0.08);
+        }
+
+        .section-card:hover::before { opacity: 1; }
+
+        .card-icon {
+            width: 50px; height: 50px;
+            background: rgba(201,149,42,0.1);
+            border: 1px solid rgba(201,149,42,0.25);
+            border-radius: 2px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--gold);
+            margin: 0 auto 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .section-card:hover .card-icon {
+            background: rgba(201,149,42,0.18);
+            color: var(--gold-light);
+        }
+
+        .card-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gold-pale);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-text {
+            font-family: 'Noto Sans Ethiopic', sans-serif;
+            font-size: 0.9rem;
+            color: rgba(245,230,184,0.6);
+            line-height: 1.85;
+        }
+
+        /* Donation bank boxes */
+        .bank-box {
+            background: rgba(201,149,42,0.05);
+            border: 1px solid rgba(201,149,42,0.25);
+            border-radius: 2px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        .bank-box:hover {
+            border-color: rgba(201,149,42,0.5);
+            background: rgba(201,149,42,0.1);
+        }
+        .bank-label {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .bank-number {
+            font-family: 'Cinzel', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--ivory);
+            letter-spacing: 0.08em;
+        }
+
+        /* Contact form */
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,149,42,0.2);
+            color: var(--parchment);
+            padding: 14px 16px;
+            border-radius: 2px;
+            font-family: 'Noto Sans Ethiopic', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-input::placeholder { color: rgba(245,230,184,0.3); }
+        .form-input:focus { border-color: rgba(201,149,42,0.55); }
+
+        .form-label {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: rgba(201,149,42,0.7);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-deep) 100%);
+            color: var(--gold-pale);
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 16px;
+            border: 1px solid rgba(201,149,42,0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #a52020 0%, var(--crimson) 100%);
+            box-shadow: 0 8px 30px rgba(139,26,26,0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Contact cards */
+        .contact-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,149,42,0.18);
+            border-radius: 2px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .contact-card:hover {
+            border-color: rgba(201,149,42,0.4);
+            background: rgba(201,149,42,0.05);
+        }
+        .contact-icon {
+            width: 50px; height: 50px;
+            background: rgba(139,26,26,0.2);
+            border: 1px solid rgba(201,149,42,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: var(--gold);
+            margin: 0 auto 1rem;
+        }
+
+        /* Footer */
+        .custom-footer {
+            background: var(--ink);
+            border-top: 1px solid rgba(201,149,42,0.2);
+            padding: 60px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-logo {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.1rem;
+            color: var(--gold-light);
+            letter-spacing: 0.1em;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-icon-link {
+            color: rgba(245,230,184,0.4);
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-size: 1.2rem;
+        }
+        .social-icon-link:hover { transform: translateY(-4px); color: var(--gold-light); }
+
+        .footer-copy {
+            font-family: 'Cinzel', serif;
+            font-size: 9px;
+            letter-spacing: 0.3em;
+            color: rgba(245,230,184,0.2);
+            text-transform: uppercase;
+            margin-top: 1.5rem;
+        }
+
+        /* Gallery */
+        .gallery-item {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,149,42,0.15);
+            border-radius: 2px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+        .gallery-item::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 1px solid rgba(201, 149, 42, 0.25);
+            pointer-events: none;
+            transition: all 0.4s ease;
+            z-index: 3;
+        }
+        .gallery-item:hover {
+            border-color: rgba(201,149,42,0.6);
+            box-shadow: 0 15px 45px rgba(201,149,42,0.2);
+            transform: translateY(-2px);
+        }
+        .gallery-item:hover::after {
+            inset: 12px;
+            border-color: rgba(232, 190, 90, 0.7);
+            box-shadow: inset 0 0 10px rgba(201,149,42,0.15);
+        }
+        .gallery-item > img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .gallery-item:hover > img {
+            transform: scale(1.05);
+        }
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(26,10,8,0.4) 0%, rgba(15,5,3,0.85) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 2;
+        }
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+        .gallery-view-icon {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(201,149,42,0.8));
+            transform: scale(0.7);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .gallery-item:hover .gallery-view-icon {
+            transform: scale(1);
+        }
+        .gallery-placeholder {
+            display: flex; align-items: center; justify-content: center;
+            height: 100%; color: rgba(201,149,42,0.2); font-size: 2rem;
+        }
+
+        /* Ornamental separator */
+        .ornament {
+            text-align: center;
+            color: var(--gold);
+            font-size: 1.2rem;
+            margin: 2rem 0;
+            opacity: 0.6;
+        }
+
+        /* Donation quote */
+        .donation-quote {
+            font-family: 'EB Garamond', serif;
+            font-style: italic;
+            font-size: 1.3rem;
+            color: var(--gold-pale);
+            text-align: center;
+            padding: 2rem;
+            border-left: 2px solid var(--gold);
+            border-right: 2px solid var(--gold);
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        /* Mobile hamburger */
+        .hamburger-btn {
+            background: none; border: none;
+            color: var(--gold-pale); font-size: 1.25rem;
+            cursor: pointer; padding: 6px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--ink); }
+        ::-webkit-scrollbar-thumb { background: var(--crimson); border-radius: 0; }
+
+        /* Mobile nav items */
+        .mobile-nav-item {
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            color: rgba(245,230,184,0.6);
+            text-transform: uppercase;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(201,149,42,0.08);
+            cursor: pointer;
+            transition: color 0.2s;
+            display: block;
+        }
+        .mobile-nav-item:hover { color: var(--gold-light); }
+    </style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- ══════════════════════════════════════ NAV ══════════════════════════════════════ -->
+<nav class="fixed w-full z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20 gap-4">
+
+            <!-- Logo -->
+            <div class="flex items-center gap-3 shrink-0 cursor-pointer" onclick="navigateTo('home')">
+                <img src="images/arma.jpg" alt="ፈለገ ቅዱሳን"
+                     class="w-10 h-10 rounded-full object-cover"
+                     style="border: 1px solid rgba(201,149,42,0.4); box-shadow: 0 0 12px rgba(201,149,42,0.2);">
+                <span class="nav-logo-text" data-i18n="logo">ፈለገ ቅዱሳን</span>
+            </div>
+
+            <!-- Desktop Nav -->
+            <div class="hidden lg:flex items-center gap-5 xl:gap-6">
+                <a onclick="navigateTo('home')"     class="nav-link active" data-page="home"     data-i18n="nav-home">መነሻ</a>
+                <a onclick="navigateTo('about')"    class="nav-link"        data-page="about"    data-i18n="nav-about">ስለ እኛ</a>
+                <a onclick="navigateTo('courses')"  class="nav-link"        data-page="courses"  data-i18n="nav-courses">ትምህርቶች</a>
+                <a onclick="navigateTo('commerce')" class="nav-link"        data-page="commerce" data-i18n="nav-commerce">ንግድ</a>
+                <a onclick="navigateTo('gallery')"  class="nav-link"        data-page="gallery"  data-i18n="nav-gallery">ማዕከለ-ስዕላት</a>
+                <a onclick="navigateTo('donation')" class="nav-link"        data-page="donation" data-i18n="nav-donation">መባ</a>
+                <a onclick="navigateTo('contact')"  class="nav-link"        data-page="contact"  data-i18n="nav-contact">እውቂያ</a>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-3 shrink-0">
+                <select id="langSelector" onchange="changeLanguage(this.value)" class="lang-select hidden lg:block">
+                    <option value="am">አማርኛ</option>
+                    <option value="en">English</option>
+                    <option value="om">Oromoo</option>
+                    <option value="tg">ትግርኛ</option>
+                </select>
+
+                <!-- LOGIN BUTTON -->
+                <a href="login.php" class="btn-login hidden lg:inline-flex" data-i18n="nav-login">
+                    <i class="fas fa-sign-in-alt text-xs"></i>
+                    <span>ይግቡ</span>
+                </a>
+
+                <button onclick="toggleMenu()" class="hamburger-btn lg:hidden">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="lg:hidden">
+        <div class="flex flex-col p-6 gap-1">
+            <a class="mobile-nav-item" onclick="navigateTo('home')"     data-i18n="nav-home">መነሻ</a>
+            <a class="mobile-nav-item" onclick="navigateTo('about')"    data-i18n="nav-about">ስለ እኛ</a>
+            <a class="mobile-nav-item" onclick="navigateTo('courses')"  data-i18n="nav-courses">ትምህርቶች</a>
+            <a class="mobile-nav-item" onclick="navigateTo('commerce')" data-i18n="nav-commerce">ንግድ</a>
+            <a class="mobile-nav-item" onclick="navigateTo('gallery')"  data-i18n="nav-gallery">ማዕከለ-ስዕላት</a>
+            <a class="mobile-nav-item" onclick="navigateTo('donation')" data-i18n="nav-donation">መባ</a>
+            <a class="mobile-nav-item" onclick="navigateTo('contact')"  data-i18n="nav-contact">እውቂያ</a>
+
+            <div class="flex items-center gap-3 mt-4 pt-4" style="border-top: 1px solid rgba(201,149,42,0.15);">
+                <select onchange="changeLanguage(this.value)" class="lang-select flex-1">
+                    <option value="am">አማርኛ</option>
+                    <option value="en">English</option>
+                    <option value="om">Oromoo</option>
+                    <option value="tg">ትግርኛ</option>
+                </select>
+                <a href="login.php" class="btn-login" data-i18n="nav-login">
+                    <i class="fas fa-sign-in-alt text-xs"></i>
+                    <span>ይግቡ</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════ HOME ══════════════════════════════════════ -->
+<main id="page-home" class="page-content active">
+    <section class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-eyebrow">
+                <span>✦</span>
+                <span data-i18n="hero-subtitle">በትጋትና በቅድስና የምታገለግል ቤተክርስቲያን</span>
+                <span>✦</span>
+            </div>
+
+            <h1 class="hero-title" data-i18n="welcome">እንኳን ደህና መጡ ወደ ፈለገ ቅዱሳን</h1>
+
+            <p class="hero-subtitle" style="font-style:italic">Felege Kidusan Sunday School</p>
+
+            <p class="hero-desc" data-i18n="hero-description">
+                የልጆቻችንን መንፈሳዊ ህይወት ለመገንባት እና የቤተክርስቲያንን አስተምህሮ በትክክል ለማስረፅ የምንተጋ ሰንበት ትምህርት ቤት ነን።
+            </p>
+
+       
+   
+    </section>
+</main>
+
+
+<!-- ══════════════════════════════════════ ABOUT ══════════════════════════════════════ -->
+<main id="page-about" class="page-content themed-page">
+    <div class="max-w-5xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-about">ስለ እኛ</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="section-card">
+                <div class="card-icon"><i class="fas fa-eye"></i></div>
+                <h3 class="card-title" data-i18n="vision-title">ራዕይ</h3>
+                <p class="card-text" data-i18n="vision-text">
+                    የነገይቱ ቤተክርስቲያን ተረካቢ የሆኑ ህጻናትን በስነ-ምግባር እና በሃይማኖት ታንጸው እንዲያድጉ ማድረግ።
+                </p>
+            </div>
+            <div class="section-card">
+                <div class="card-icon"><img src="images/icon.png" alt="icon" class="w-6 h-6 object-contain"></div>
+                <h3 class="card-title" data-i18n="mission-title">ተልዕኮ</h3>
+                <p class="card-text" data-i18n="mission-text">
+                    የኦርቶዶክስ ተዋህዶ ቤተክርስቲያንን አስተምህሮ መሰረት ያደረገ ትምህርት ለህጻናት እና ለወጣቶች ተደራሽ ማድረግ።
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ COURSES ══════════════════════════════════════ -->
+<main id="page-courses" class="page-content themed-page">
+    <div class="max-w-6xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-courses">ትምህርቶች</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="section-card text-center">
+                <div class="card-icon"><i class="fas fa-book-open"></i></div>
+                <h3 class="card-title" data-i18n="course-1-title">ንባብ እና ዜማ</h3>
+                <p class="card-text" data-i18n="course-1-text">የግዕዝ ፊደላት ንባብ፣ የጸሎት ትምህርት እና የመዝሙር ጥናት።</p>
+            </div>
+            <div class="section-card text-center">
+                <div class="card-icon"><img src="images/icon.png" alt="icon" class="w-6 h-6 object-contain"></div>
+                <h3 class="card-title" data-i18n="course-2-title">መሰረተ ሃይማኖት</h3>
+                <p class="card-text" data-i18n="course-2-text">ስለ አምስቱ አዕማደ ምስጢር እና ስለ ቤተክርስቲያን ስርዓት።</p>
+            </div>
+            <div class="section-card text-center">
+                <div class="card-icon"><i class="fas fa-scroll"></i></div>
+                <h3 class="card-title" data-i18n="course-3-title">የመጽሐፍ ቅዱስ ታሪክ</h3>
+                <p class="card-text" data-i18n="course-3-text">የብሉይ እና የሐዲስ ኪዳን ታሪኮች ለህጻናት በሚመጥን መልኩ።</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ COMMERCE ══════════════════════════════════════ -->
+<main id="page-commerce" class="page-content themed-page">
+    <div class="max-w-5xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-commerce">ንግድ</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="section-card text-center" style="padding: 5rem 2rem;">
+            <div class="card-icon" style="margin-bottom: 2rem; font-size: 1.8rem; width: 50px; height: 50px;">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <h3 class="card-title text-xl mb-4" data-i18n="shop-soon">መደብራችን በቅርቡ ይከፈታል</h3>
+            <p class="card-text max-w-lg mx-auto" data-i18n="shop-text">
+                መንፈሳዊ መጻሕፍት፣ ስዕላት እና ሌሎች የቤተክርስቲያን አገልግሎት እቃዎችን እዚህ ያገኛሉ።
+            </p>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ GALLERY ══════════════════════════════════════ -->
+<main id="page-gallery" class="page-content themed-page">
+    <div class="max-w-7xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-gallery">ማዕከለ-ስዕላት</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(0)">
+                <img src="images/9.JPG" alt="Gallery Image 9" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(1)">
+                <img src="images/1.JPG" alt="Gallery Image 1" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(2)">
+                <img src="images/2.JPG" alt="Gallery Image 2" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(3)">
+                <img src="images/3.JPG" alt="Gallery Image 3" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(4)">
+                <img src="images/5.JPG" alt="Gallery Image 5" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(5)">
+                <img src="images/6.JPG" alt="Gallery Image 6" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(6)">
+                <img src="images/7.JPG" alt="Gallery Image 7" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(7)">
+                <img src="images/8.JPG" alt="Gallery Image 8" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(8)">
+                <img src="images/10.JPG" alt="Gallery Image 10" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(9)">
+                <img src="images/11.JPG" alt="Gallery Image 11" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(10)">
+                <img src="images/12.JPG" alt="Gallery Image 12" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(11)">
+                <img src="images/13.JPG" alt="Gallery Image 13" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(12)">
+                <img src="images/14.JPG" alt="Gallery Image 14" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(13)">
+                <img src="images/15.JPG" alt="Gallery Image 15" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+            <div class="gallery-item cursor-pointer" onclick="openLightbox(14)">
+                <img src="images/16.JPG" alt="Gallery Image 16" loading="lazy">
+                <div class="gallery-overlay">
+                    <img src="images/icon.png" alt="view" class="gallery-view-icon">
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ DONATION ══════════════════════════════════════ -->
+<main id="page-donation" class="page-content themed-page">
+    <div class="max-w-4xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-donation">መባ</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="section-card">
+            <div class="donation-quote" data-i18n="donation-quote">
+                "በደስታ የሚሰጠውን እግዚአብሔር ይወዳልና።" (2ኛ ቆሮ 9:7)
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bank-box">
+                    <p class="bank-label">CBE Account</p>
+                    <p class="bank-number">1000123456789</p>
+                </div>
+                <div class="bank-box">
+                    <p class="bank-label">Dashen Bank</p>
+                    <p class="bank-number">5009876543210</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ CONTACT ══════════════════════════════════════ -->
+<main id="page-contact" class="page-content themed-page">
+    <div class="max-w-4xl mx-auto px-4 relative z-10">
+        <h2 class="section-heading" data-i18n="nav-contact">እውቂያ</h2>
+        <div class="section-divider"><img src="images/icon.png" alt="icon" class="cross-icon"></div>
+
+        <div class="section-card mb-8">
+            <form class="space-y-5">
+                <div class="grid md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="form-label">First Name</label>
+                        <input type="text" placeholder="Your Name" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Gmail Address</label>
+                        <input type="email" placeholder="example@gmail.com" class="form-input">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label" data-i18n="comment-label">አስተያየት / መልዕክት</label>
+                    <textarea placeholder="Write your message here..." rows="5" class="form-input resize-none"></textarea>
+                </div>
+                <button type="button" class="btn-submit" data-i18n="btn-send">መልዕክት ላክ</button>
+            </form>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-5">
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fas fa-phone"></i></div>
+                <h4 class="card-title text-sm" data-i18n="phone-label">ስልካችን</h4>
+                <p class="card-text text-sm">+251 911 00 00 00</p>
+            </div>
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <h4 class="card-title text-sm" data-i18n="address-label">አድራሻችን</h4>
+                <p class="card-text text-sm" data-i18n="address-val">አዲስ አበባ፣ ኢትዮጵያ</p>
+            </div>
+            <div class="contact-card">
+                <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+                <h4 class="card-title text-sm">Our Gmail</h4>
+                <p class="card-text text-sm">info@felegekidusan.com</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+
+<!-- ══════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
+<footer class="custom-footer">
+    <div class="max-w-7xl mx-auto">
+        <p class="footer-logo" data-i18n="logo">ፈለገ ቅዱሳን</p>
+
+        <div class="flex justify-center gap-8 mb-8">
+            <a href="#" class="social-icon-link" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="https://t.me/felege_kidussan" class="social-icon-link" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+            <a href="#" class="social-icon-link" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+            <a href="#" class="social-icon-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        </div>
+
+        <p class="footer-copy">&copy; 2026 / 2018 &nbsp;·&nbsp; Felege Kidusan &nbsp;·&nbsp; All Rights Reserved</p>
+    </div>
+</footer>
+
+<!-- ══════════════════════════════════════ LIGHTBOX MODAL ══════════════════════════════════════ -->
+<div id="gallery-lightbox" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/95 backdrop-blur-md transition-opacity duration-300 opacity-0" onclick="closeLightbox(event)">
+    <!-- Close Button -->
+    <button class="absolute top-6 right-6 text-gold-pale hover:text-gold-light text-3xl focus:outline-none transition-colors duration-300" onclick="closeLightbox(event)" style="z-index: 110;">
+        <i class="fas fa-times"></i>
+    </button>
+
+    <!-- Navigation Buttons -->
+    <button class="absolute left-4 md:left-8 text-gold-pale hover:text-gold-light text-4xl focus:outline-none transition-colors duration-300" onclick="navigateLightbox(-1, event)" style="z-index: 110;">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="absolute right-4 md:right-8 text-gold-pale hover:text-gold-light text-4xl focus:outline-none transition-colors duration-300" onclick="navigateLightbox(1, event)" style="z-index: 110;">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <!-- Main Image Container -->
+    <div class="relative max-w-4xl max-h-[85vh] p-4 flex flex-col items-center justify-center" onclick="event.stopPropagation()" style="z-index: 105;">
+        <!-- Ornate Frame Wrapper -->
+        <div class="relative p-2 md:p-3 bg-gradient-to-br from-gold/40 via-crimson/30 to-gold/40 border border-gold/50 shadow-2xl rounded-sm">
+            <!-- Double Inner Border -->
+            <div class="border border-gold/30 p-1 bg-ink">
+                <img id="lightbox-img" src="" alt="Gallery Preview" class="max-w-full max-h-[70vh] md:max-h-[75vh] object-contain block">
+            </div>
+        </div>
+        
+        <!-- Caption/Subtext -->
+        <div class="text-center mt-4">
+            <p id="lightbox-caption" class="font-cinzel text-gold-light text-sm tracking-wider uppercase"></p>
+            <div class="flex items-center justify-center gap-2 mt-1 text-gold/60 text-xs font-serif">
+                <img src="images/icon.png" alt="cross" class="w-3 h-3 object-contain opacity-70">
+                <span id="lightbox-counter"></span>
+                <img src="images/icon.png" alt="cross" class="w-3 h-3 object-contain opacity-70">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════ SCRIPTS ══════════════════════════════════════ -->
+<script>
+/* ── Particle System (floating embers/incense smoke) ── */
+(function(){
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const COLORS = ['rgba(201,149,42,', 'rgba(232,190,90,', 'rgba(245,230,184,', 'rgba(139,26,26,'];
+
+    class Particle {
+        constructor(){
+            this.reset(true);
+        }
+        reset(init){
+            this.x  = Math.random() * W;
+            this.y  = init ? Math.random() * H : H + 10;
+            this.r  = Math.random() * 1.8 + 0.4;
+            this.vy = -(Math.random() * 0.4 + 0.15);
+            this.vx = (Math.random() - 0.5) * 0.3;
+            this.life = 0;
+            this.maxLife = Math.random() * 180 + 120;
+            this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        }
+        update(){
+            this.x += this.vx + Math.sin(this.life * 0.04) * 0.2;
+            this.y += this.vy;
+            this.life++;
+            if(this.life > this.maxLife || this.y < -10) this.reset(false);
+        }
+        draw(){
+            const alpha = this.life < 30
+                ? this.life / 30
+                : this.life > this.maxLife - 40
+                ? (this.maxLife - this.life) / 40
+                : 0.65;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+            ctx.fillStyle = this.color + alpha + ')';
+            ctx.fill();
+        }
+    }
+
+    for(let i = 0; i < 90; i++) particles.push(new Particle());
+
+    function loop(){
+        ctx.clearRect(0, 0, W, H);
+        particles.forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(loop);
+    }
+    loop();
+})();
+
+
+/* ── Translations ── */
+const translations = {
+    en: {
+        "logo":"FELEGE KIDUSAN","nav-home":"Home","nav-about":"About Us",
+        "nav-courses":"Courses","nav-commerce":"Commerce","nav-gallery":"Gallery",
+        "nav-donation":"Donation","nav-contact":"Contact Us","nav-login":"Login",
+        "welcome":"Welcome to Felege Kidusan",
+        "hero-subtitle":"SERVING WITH DILIGENCE AND HOLINESS",
+        "hero-description":"We are a Sunday school dedicated to building our children's spiritual lives and instilling the teachings of the Church.",
+        "vision-title":"Vision","vision-text":"To raise children who are the future of the church, nurtured in ethics and faith.",
+        "mission-title":"Mission","mission-text":"To provide teachings based on the Orthodox Tewahedo Church for children and youth.",
+        "course-1-title":"Reading & Hymns","course-1-text":"Ge'ez alphabet, prayer lessons, and hymn studies.",
+        "course-2-title":"Foundations of Faith","course-2-text":"About the five pillars of mystery and church regulations.",
+        "course-3-title":"Biblical History","course-3-text":"Old and New Testament stories suitable for children.",
+        "shop-soon":"Our Shop is Opening Soon","shop-text":"Find spiritual books, icons, and other church service items here.",
+        "donation-quote":"\"For God loveth a cheerful giver.\" (2 Cor 9:7)",
+        "address-label":"Our Address","address-val":"Addis Ababa, Ethiopia",
+        "phone-label":"Our Phone","btn-send":"Send Message","comment-label":"Comment / Message"
+    },
+    am: {
+        "logo":"ፈለገ ቅዱሳን","nav-home":"መነሻ","nav-about":"ስለ እኛ",
+        "nav-courses":"ትምህርቶች","nav-commerce":"ንግድ","nav-gallery":"ማዕከለ-ስዕላት",
+        "nav-donation":"መባ","nav-contact":"እውቂያ","nav-login":"ይግቡ",
+        "welcome":"እንኳን ደህና መጡ ወደ ፈለገ ቅዱሳን",
+        "hero-subtitle":"በትጋትና በቅድስና የምታገለግል ቤተክርስቲያን",
+        "hero-description":"የልጆቻችንን መንፈሳዊ ህይወት ለመገንባት እና የቤተክርስቲያንን አስተምህሮ በትክክል ለማስረፅ የምንተጋ ሰንበት ትምህርት ቤት ነን።",
+        "vision-title":"ራዕይ","vision-text":"የነገይቱ ቤተክርስቲያን ተረካቢ የሆኑ ህጻናትን በስነ-ምግባር እና በሃይማኖት ታንጸው እንዲያድጉ ማድረግ።",
+        "mission-title":"ተልዕኮ","mission-text":"የኦርቶዶክስ ተዋህዶ ቤተክርስቲያንን አስተምህሮ መሰረት ያደረገ ትምህርት ለህጻናት እና ለወጣቶች ተደራሽ ማድረግ።",
+        "course-1-title":"ንባብ እና ዜማ","course-1-text":"የግዕዝ ፊደላት ንባብ፣ የጸሎት ትምህርት እና የመዝሙር ጥናት።",
+        "course-2-title":"መሰረተ ሃይማኖት","course-2-text":"ስለ አምስቱ አዕማደ ምስጢር እና ስለ ቤተክርስቲያን ስርዓት።",
+        "course-3-title":"የመጽሐፍ ቅዱስ ታሪክ","course-3-text":"የብሉይ እና የሐዲስ ኪዳን ታሪኮች ለህጻናት በሚመጥን መልኩ።",
+        "shop-soon":"መደብራችን በቅርቡ ይከፈታል","shop-text":"መንፈሳዊ መጻሕፍት፣ ስዕላት እና ሌሎች የቤተክርስቲያን አገልግሎት እቃዎችን እዚህ ያገኛሉ።",
+        "donation-quote":"\"በደስታ የሚሰጠውን እግዚአብሔር ይወዳልና።\" (2ኛ ቆሮ 9:7)",
+        "address-label":"አድራሻችን","address-val":"አዲስ አበባ፣ ኢትዮጵያ",
+        "phone-label":"ስልካችን","btn-send":"መልዕክት ላክ","comment-label":"አስተያየት / መልዕክት"
+    },
+    om: {
+        "logo":"FELEGE KIDUSAN","nav-home":"Mana","nav-about":"Waa'ee Keenya",
+        "nav-courses":"Koorsiiwwan","nav-commerce":"Daldala","nav-gallery":"Gallaarii",
+        "nav-donation":"Kennaa","nav-contact":"Nu Quunnamaa","nav-login":"Seeni",
+        "welcome":"Baga Gara Felege Kidusan Nagaan Dhuftan",
+        "hero-subtitle":"Tajaajila Qulqullummaa Fi Jabinan",
+        "hero-description":"Nuyi mana barumsaa sanbataa jireenya hafuuraa ijoollee keenyaa ijaaruu fi barsiisa Mana Kiristaanaa barsiisuuf hojjennu dha.",
+        "vision-title":"Mul'ata","vision-text":"Ijoollee gara fuulduraa mana kiristaanaa ta'an naamusaa fi amantiin guddisuu.",
+        "mission-title":"Ergaa","mission-text":"Barsiisa Mana Kiristaanaa Ortodoksii Tawaahidoo irratti hundaa'e ijoollee fi dargaggootaaf dhiyeessuu.",
+        "course-1-title":"Dubbisa Fi Faaruu","course-1-text":"Qubee Gi'iizii, barumsa kadhannaa fi qorannoo faaruu.",
+        "course-2-title":"Hundee Amantii","course-2-text":"Waa'ee utubaa iccitii shanananii fi seerota mana kiristaanaa.",
+        "course-3-title":"Seenaa Kitaaba Qulqulluu","course-3-text":"Seenaawwan Kakuu Moofaa fi Haaraa ijoolleef ta'an.",
+        "shop-soon":"Suuqni Keenya Dhiyootti Ni Banama","shop-text":"Kitaabota hafuuraa, fakkiiwwan qulqulluu fi meeshaalee tajaajilaa asitti argattu.",
+        "donation-quote":"Waaqayyo nama gammachuun kennu jaallata. (2 Qor 9:7)",
+        "address-label":"Teessoo Keenya","address-val":"Finfinnee, Itoophiyaa",
+        "phone-label":"Bilbila Keenya","btn-send":"Ergi","comment-label":"Yaada / Ergaa"
+    },
+    tg: {
+        "logo":"ፈለገ ቅዱሳን","nav-home":"መበገሲ","nav-about":"ብዛዕባና",
+        "nav-courses":"ትምህርትታት","nav-commerce":"ንግዲ","nav-gallery":"ጋለሪ",
+        "nav-donation":"መባ","nav-contact":"ርክብ","nav-login":"እቶ",
+        "welcome":"እንቋዕ ብደሓን መጻእኩም ናብ ፈለገ ቅዱሳን",
+        "hero-subtitle":"ብትግሃትን ቅድስናን እተገልግል ቤተክርስቲያን",
+        "hero-description":"መንፈሳዊ ህይወት ደቅና ንምህናጽን ትምህርቲ ቤተክርስቲያን ብትክክል ንምስራጽን እንተግህ ቤት ትምህርቲ ሰንበት ኢና።",
+        "vision-title":"ራእይ","vision-text":"ተረከብቲ ጽባሕ ቤተክርስቲያን ዝኾኑ ህጻናት ብስነ-ምግባርን ሃይማኖትን ተሃኒጾም ክዓብዩ ምግባር።",
+        "mission-title":"ተልእኮ","mission-text":"መሰረት ትምህርቲ ቤተክርስቲያን ኦርቶዶክስ ተዋህዶ ንህጻናትን ንመናእሰይን ተበጻሒ ምግባር።",
+        "course-1-title":"ንባብን ዜማን","course-1-text":"ንባብ ፊደላት ግእዝ፣ ትምህርቲ ጸሎትን መዝሙርን።",
+        "course-2-title":"መሰረተ ሃይማኖት","course-2-text":"ብዛዕባ ሓሙሽተ አዕማደ ምስጢርን ስርዓተ ቤተክርስቲያንን።",
+        "course-3-title":"ታሪክ መጽሓፍ ቅዱስ","course-3-text":"ታሪኽ ብሉይን ሓዲሽን ኪዳን ንህጻናት ብዝጥዕም መልክዕ።",
+        "shop-soon":"ድኳንና ብቀረባ ክኽፈት እዩ","shop-text":"መንፈሳዊ መጻሕፍቲ፣ ስእላትን ካልኦት ንአገልግሎት ቤተክርስቲያን ዘድልዩ ነገራትን ኣብዚ ክትረኽቡ ኢኹም።",
+        "donation-quote":"ነቲ ብሓጎስ ዝህብ እግዚአብሔር ይፈትዎ እዩ። (2 ቆሮ 9:7)",
+        "address-label":"አድራሻና","address-val":"አዲስ አበባ፣ አትዮጵያ",
+        "phone-label":"ተሌፎንና","btn-send":"ስደድ","comment-label":"ርእይቶ / መልእኽቲ"
+    }
+};
+
+function changeLanguage(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang]?.[key]) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.placeholder = translations[lang][key];
+            } else {
+                el.innerText = translations[lang][key];
+            }
+        }
+    });
+    document.documentElement.lang = lang;
+    // sync all selects
+    document.querySelectorAll('#langSelector, [onchange*="changeLanguage"]').forEach(s => s.value = lang);
+}
+
+function navigateTo(pageId) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+    const targetPage = document.getElementById('page-' + pageId);
+    if (targetPage) targetPage.classList.add('active');
+
+    const link = document.querySelector(`[data-page="${pageId}"]`);
+    if (link) link.classList.add('active');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('mobile-menu').classList.remove('active');
+}
+
+function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('active');
+}
+
+/* ── Lightbox Gallery ── */
+let currentGalleryIndex = 0;
+const galleryImages = [
+    { src: 'images/9.JPG', alt: 'Gallery Image 9' },
+    { src: 'images/1.JPG', alt: 'Gallery Image 1' },
+    { src: 'images/2.JPG', alt: 'Gallery Image 2' },
+    { src: 'images/3.JPG', alt: 'Gallery Image 3' },
+    { src: 'images/5.JPG', alt: 'Gallery Image 5' },
+    { src: 'images/6.JPG', alt: 'Gallery Image 6' },
+    { src: 'images/7.JPG', alt: 'Gallery Image 7' },
+    { src: 'images/8.JPG', alt: 'Gallery Image 8' },
+    { src: 'images/10.JPG', alt: 'Gallery Image 10' },
+    { src: 'images/11.JPG', alt: 'Gallery Image 11' },
+    { src: 'images/12.JPG', alt: 'Gallery Image 12' },
+    { src: 'images/13.JPG', alt: 'Gallery Image 13' },
+    { src: 'images/14.JPG', alt: 'Gallery Image 14' },
+    { src: 'images/15.JPG', alt: 'Gallery Image 15' },
+    { src: 'images/16.JPG', alt: 'Gallery Image 16' }
+];
+
+function openLightbox(index) {
+    currentGalleryIndex = index;
+    updateLightboxContent();
+    
+    const lightbox = document.getElementById('gallery-lightbox');
+    lightbox.classList.remove('hidden');
+    lightbox.classList.add('flex');
+    setTimeout(() => {
+        lightbox.classList.remove('opacity-0');
+        lightbox.classList.add('opacity-100');
+    }, 20);
+    
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(event) {
+    if (event) event.stopPropagation();
+    const lightbox = document.getElementById('gallery-lightbox');
+    lightbox.classList.remove('opacity-100');
+    lightbox.classList.add('opacity-0');
+    
+    setTimeout(() => {
+        lightbox.classList.remove('flex');
+        lightbox.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 300);
+}
+
+function navigateLightbox(direction, event) {
+    if (event) event.stopPropagation();
+    currentGalleryIndex += direction;
+    if (currentGalleryIndex >= galleryImages.length) {
+        currentGalleryIndex = 0;
+    } else if (currentGalleryIndex < 0) {
+        currentGalleryIndex = galleryImages.length - 1;
+    }
+    updateLightboxContent();
+}
+
+function updateLightboxContent() {
+    const img = document.getElementById('lightbox-img');
+    const caption = document.getElementById('lightbox-caption');
+    const counter = document.getElementById('lightbox-counter');
+    
+    const currentItem = galleryImages[currentGalleryIndex];
+    img.src = currentItem.src;
+    img.alt = currentItem.alt;
+    
+    const activeLang = document.documentElement.lang || 'am';
+    let label = "";
+    if (activeLang === 'am') {
+        label = "ማዕከለ-ስዕላት | ስዕል " + (currentGalleryIndex + 1);
+    } else if (activeLang === 'om') {
+        label = "Gallaarii | Fakkii " + (currentGalleryIndex + 1);
+    } else if (activeLang === 'tg') {
+        label = "ጋለሪ | ስእሊ " + (currentGalleryIndex + 1);
+    } else {
+        label = "Gallery | Photo " + (currentGalleryIndex + 1);
+    }
+    caption.innerText = label;
+    counter.innerText = (currentGalleryIndex + 1) + " / " + galleryImages.length;
+}
+
+document.addEventListener('keydown', function(event) {
+    const lightbox = document.getElementById('gallery-lightbox');
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+    
+    if (event.key === 'Escape') {
+        closeLightbox();
+    } else if (event.key === 'ArrowRight') {
+        navigateLightbox(1);
+    } else if (event.key === 'ArrowLeft') {
+        navigateLightbox(-1);
+    }
+});
+
+window.onload = () => { changeLanguage('am'); };
+</script>
+</body>
+</html>
